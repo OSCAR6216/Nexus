@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS // Rescue Grid</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">N</div>
+      <div><strong>NEXUS</strong><span>RESCUE GRID</span></div>
+    </div>
+
+    <div class="location">
+      <b>CENTRO DE OPERACIONES</b>
+      <span>Manta, Ecuador · <i>EN LÍNEA</i></span>
+    </div>
+
+    <form id="globalSearchForm" class="search">
+      <span>⌕</span>
+      <input id="globalSearch" placeholder="Buscar incidente, unidad o sector...">
+      <button type="submit">ENTER</button>
+    </form>
+
+    <div class="clock">
+      <b id="clock">00:00:00</b>
+      <span id="dateText"></span>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <button class="nav active" data-view="mapa" title="Mapa">⌖</button>
+    <button class="nav" data-view="incidentes" title="Incidentes">◆</button>
+    <button class="nav" data-view="unidades" title="Unidades">▣</button>
+    <button class="nav" data-view="cola" title="Cola">☷</button>
+    <button class="nav" data-view="rutas" title="Rutas">⌁</button>
+    <div class="grow"></div>
+    <button class="nav" data-view="reportes" title="Reportes">▥</button>
+    <button class="nav" data-view="estructuras" title="Estructuras">⌘</button>
+    <button class="nav" data-view="config" title="Configuración">⚙</button>
+  </aside>
+
+  <main class="content">
+    <section id="view-mapa" class="view active map-view">
+      <div class="map-column">
+        <div class="map-shell">
+          <div id="mainMap" class="real-map"></div>
+
+          <div class="filters">
+            <button class="filter active" data-map-filter="todos">Todos</button>
+            <button class="filter" data-map-filter="incendio">Incendios</button>
+            <button class="filter" data-map-filter="medico">Médicos</button>
+            <button class="filter" data-map-filter="policia">Policía</button>
+            <button class="filter" data-map-filter="trafico">Accidentes</button>
+            <button class="filter" data-map-filter="falla">Fallas</button>
+            <button class="filter" data-map-filter="unidades">Unidades</button>
+          </div>
+
+          <div class="map-hud">
+            <b>MAPA OPERATIVO REAL</b>
+            <span>MapLibre + OpenFreeMap · arrastra, zoom y rutas viales</span>
+          </div>
+
+          <button id="fitOperationsBtn" class="map-floating fit-btn" title="Ver toda la operación">◎</button>
+          <button id="toggleRoutesBtn" class="map-floating route-btn active" title="Mostrar/ocultar rutas">⌁</button>
+        </div>
+
+        <div id="statusStrip" class="status-strip"></div>
+
+        <button id="drawerToggle" class="drawer-toggle">▴ OPERACIONES ACTIVAS</button>
+        <div id="drawer" class="drawer">
+          <div class="drawer-tabs">
+            <button class="drawer-tab active" data-drawer="cola">Cola de incidentes</button>
+            <button class="drawer-tab" data-drawer="ruta">Unidades en ruta</button>
+          </div>
+          <div id="drawer-cola" class="drawer-pane active"></div>
+          <div id="drawer-ruta" class="drawer-pane"></div>
+        </div>
+      </div>
+
+      <aside id="incidentPanel" class="side-panel"></aside>
+    </section>
+
+    <section id="view-incidentes" class="view page">
+      <div class="page-head">
+        <div><small>OPERACIONES</small><h1>Incidentes</h1></div>
+        <button id="newIncidentBtn" class="primary">+ NUEVO INCIDENTE</button>
+      </div>
+      <div id="incidentStats" class="mini-stats"></div>
+      <div class="table-card">
+        <div class="table-tools">
+          <input id="incidentSearch" placeholder="Buscar código, tipo o ubicación...">
+          <select id="incidentPriorityFilter">
+            <option value="todos">Todas las prioridades</option>
+            <option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option>
+          </select>
+          <select id="incidentSort">
+            <option value="prioridad">Ordenar por prioridad (selección)</option>
+            <option value="codigo">Ordenar por código (burbuja)</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Código</th><th>Tipo</th><th>Ubicación</th><th>Prioridad</th><th>Estado</th><th>Unidad</th><th>Acciones</th></tr></thead>
+            <tbody id="incidentTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-unidades" class="view page">
+      <div class="page-head">
+        <div><small>FLOTA</small><h1>Unidades</h1></div>
+        <button id="newUnitBtn" class="primary">+ NUEVA UNIDAD</button>
+      </div>
+      <div id="unitGrid" class="unit-grid"></div>
+    </section>
+
+    <section id="view-cola" class="view page">
+      <div class="page-head">
+        <div><small>FIFO</small><h1>Cola operativa</h1></div>
+        <button id="attendNextBtn" class="primary">ATENDER SIGUIENTE</button>
+      </div>
+      <div id="queueView" class="queue-view"></div>
+    </section>
+
+    <section id="view-rutas" class="view page">
+      <div class="page-head">
+        <div><small>DESPACHO</small><h1>Rutas y unidades</h1></div>
+      </div>
+      <div class="route-layout">
+        <div class="route-control card">
+          <label>Incidente activo
+            <select id="routeIncident"></select>
+          </label>
+          <div id="routeIncidentInfo" class="route-incident-info"></div>
+          <p class="label">UNIDADES DISPONIBLES / ASIGNADA</p>
+          <div id="routeUnitList"></div>
+        </div>
+
+        <div class="route-map-card card">
+          <div id="routeMap" class="real-map route-map"></div>
+          <div id="routeAlternatives" class="route-alternatives"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-reportes" class="view page">
+      <div class="page-head">
+        <div><small>ANÁLISIS</small><h1>Reportes e historial</h1></div>
+      </div>
+      <div id="reportCards" class="report-cards"></div>
+      <div class="reports-grid">
+        <div class="card">
+          <h3>Incidentes por tipo</h3>
+          <div id="typeBars" class="bars"></div>
+        </div>
+        <div class="card">
+          <h3>Historial global</h3>
+          <div id="globalHistory" class="timeline"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-estructuras" class="view page">
+      <div class="page-head">
+        <div><small>MODO ACADÉMICO</small><h1>Estructuras de datos</h1></div>
+      </div>
+      <div class="structure-tabs">
+        <button class="structure-tab active" data-structure="arreglo">Arreglo</button>
+        <button class="structure-tab" data-structure="lista">Lista enlazada</button>
+        <button class="structure-tab" data-structure="pila">Pila</button>
+        <button class="structure-tab" data-structure="cola">Cola</button>
+        <button class="structure-tab" data-structure="arbol">Árbol BST</button>
+        <button class="structure-tab" data-structure="grafo">Grafo</button>
+      </div>
+      <div id="structureContent" class="structure-content"></div>
+    </section>
+
+    <section id="view-config" class="view page">
+      <div class="page-head">
+        <div><small>SISTEMA</small><h1>Configuración</h1></div>
+      </div>
+      <div class="settings-grid">
+        <button class="setting" data-setting="operador"><span><b>Cuenta del operador</b><small>Nombre y código de sesión</small></span><strong>›</strong></button>
+        <button class="setting" data-setting="alertas"><span><b>Notificaciones</b><small>Alertas críticas</small></span><strong>›</strong></button>
+        <button class="setting" data-setting="mapa"><span><b>Mapa y rutas</b><small>Rutas operativas y estilo</small></span><strong>›</strong></button>
+        <button class="setting" data-setting="flota"><span><b>Flota</b><small>Resumen de unidades</small></span><strong>›</strong></button>
+        <button class="setting" data-setting="servicios"><span><b>Servicios geográficos</b><small>OSRM + Nominatim · sin clave obligatoria</small></span><strong>›</strong></button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="modalTitle"></h2><button id="modalClose">×</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.js"></script>
+<script src="js/structures.js"></script>
+<script src="js/app.js"></script>
+<script src="js/v9.js"></script>
+<script src="js/v10.js"></script>
+<script src="js/v12.js"></script>
+</body>
+</html>
