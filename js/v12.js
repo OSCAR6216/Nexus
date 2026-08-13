@@ -1,9 +1,8 @@
-
 /* ===== V12 robust marker fix ===== */
 
 /* El elemento que MapLibre posiciona es un host sin estilos visuales conflictivos.
    El círculo/icono está dentro y puede tener cualquier CSS sin afectar lng/lat. */
-makeMarker = function(type, html, label){
+makeMarker = function (type, html, label) {
   const host = document.createElement("div");
   host.className = "nexus-marker-host";
 
@@ -15,7 +14,7 @@ makeMarker = function(type, html, label){
   return host;
 };
 
-endpointEl = function(color, icon, label){
+endpointEl = function (color, icon, label) {
   const host = document.createElement("div");
   host.className = "route-marker-host";
 
